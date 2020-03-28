@@ -6,11 +6,13 @@ import os
 import pickle
 
 import numpy as np
+# import pandas as pd
 import torch
+import csv
 from torch.utils.data import Dataset
 
-from param import args
-from src.utils import load_obj_h5py
+# from param import args
+# from src.utils import load_obj_h5py
 
 # Load part of the dataset for fast checking.
 # Notice that here is the number of images instead of the number of data,
@@ -18,7 +20,7 @@ from src.utils import load_obj_h5py
 
 # The path to data and image features.
 
-ARCHIVED_COVID_DATA = '/COVID-19/archived_time_series'
+ARCHIVED_COVID_DATA = '/Users/nanyamashuu/PycharmProjects/COVID-19/archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv'
 
 SPLIT2NAME = {
     'train': 'train',
@@ -40,6 +42,62 @@ FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
               "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
 FIELDNAMES would be keys in the dict returned by load_obj_tsv.
 """
+
+
+#county, province, country, 1/22/20
+def new_confirmed(County, Province, Country, time):
+    #return an array of previous 14 days
+    date_list = []
+    date = time.split('/') #month/day/year
+    month = int(date[0])
+    day = int(date[1])
+    year = int(date[2])
+
+
+    #assume date is valid, edit later
+
+    if (day-14 > 0):
+        for i in range(1,15,1):
+            curr_day = str(day - i)
+            date_string = str(month)+'/' +curr_day + '/' + str(year)
+            date_list.append(date_string)
+    else:
+        left = 14 - day + 1
+        for i in range(1, day, 1):
+            curr_day = str(day - i)
+            date_string = str(month)+'/' +curr_day + '/' + str(year)
+            date_list.append(date_string)
+        if month == 3:
+            for i in range(0, left, 1):
+                curr_day = str(29 - i)
+                date_string = str(month-1) + '/' + curr_day + '/' + str(year)
+                date_list.append(date_string)
+        if month == 2:
+            for i in range(0, left, 1):
+                curr_day = str(31 - i)
+                date_string = str(month-1) + '/' + curr_day + '/' + str(year)
+                date_list.append(date_string)
+
+
+
+
+
+
+
+    with open(ARCHIVED_COVID_DATA, mode='r') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                print(f'Column names are {", ".join(row)}')
+                line_count += 1
+            print(
+                f'\t{row["name"]} works in the {row["department"]} department, and was born in {row["birthday month"]}.')
+            line_count += 1
+    #     print(f'Processed {line_count} lines.')
+
+
+
 class Covid19Dataset(Dataset):
     def __init__(self, splits: str):
         super().__init__()
@@ -89,3 +147,6 @@ class Covid19Dataset(Dataset):
         np.testing.assert_array_less(-boxes, 0+1e-5)
 
         return img_name, feats, boxes
+
+
+new_confirmed("", "", "", '03/10/20')
