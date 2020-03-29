@@ -14,9 +14,8 @@ def train_fn(model, train_loader, device, optimizer, criterion, epoch):
     for data in train_loader:
         # get the inputs
         cityData, caseSeries, labels = data
-        labels = torch.LongTensor(labels).view(-1, 1)
         cityData, caseSeries, labels = cityData.to(device), caseSeries.to(device), labels.to(device)
-        caseSeries = caseSeries.view(*caseSeries.size(), 1)
+        caseSeries = caseSeries.contiguous().view(*caseSeries.size(), 1)
 
         if labels.size()[0] == 1:
             continue
@@ -40,9 +39,8 @@ def val_fn(model, val_loader, device, criterion, epoch):
         labels = []
         for data in val_loader:
             cityData, caseSeries, labels = data
-            labels = torch.LongTensor(labels).view(-1, 1)
             cityData, caseSeries = cityData.to(device), caseSeries.to(device), labels.to(device)
-            caseSeries = caseSeries.view(*caseSeries.size(), 1)
+            caseSeries = caseSeries.contiguous().view(*caseSeries.size(), 1)
             output = model(cityData, caseSeries)
             outputs.append(output)
             labels.append(label)
@@ -76,7 +74,7 @@ def evaluate(model, device, city_info, sequence, num_pred = 1):
     with torch.no_grad():
         cityData, sequence = city_info.to(device), sequence.to(device)
         for i in range(num_pred):
-            output = model(cityData, sequence).view(size, 1)
+            output = model(cityData, sequence).contiguous().view(size, 1)
             sequence = torch.cat([sequence, output])
     return sequence
 
