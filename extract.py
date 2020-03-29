@@ -61,7 +61,7 @@ if __name__ == "__main__":
                     _id = len(input_to_id)
                     input_to_id[loc_date] = _id
                     id_to_target[_id] = "0"
-                    id_to_output[_id] = (city, [0 for i in range(15)])
+                    id_to_output[_id] = (city, [0 for i in range(14)])
 
 
         for i, curr_location in enumerate(county_data):
@@ -84,7 +84,7 @@ if __name__ == "__main__":
                     _id = len(input_to_id)
                     input_to_id[loc_date] = _id
                     id_to_target[_id] = "0"
-                    id_to_output[_id] = (city, [0 for i in range(15)])
+                    id_to_output[_id] = (city, [0 for i in range(14)])
 
 
         outfile = os.path.join(ROOT+'trimmed_data/', (name[index]))

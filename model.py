@@ -13,7 +13,8 @@ class CovidPred(nn.Module):
         self.fc_1 = nn.Linear(num_hidden + cityData_features, seq_features)
 
     def forward(self, cityData:Tensor, caseSeries:Tensor):
-        caseSeries = caseSeries.permute(1, 0, 2).log()
+        # caseSeries = caseSeries.permute(1, 0, 2).log()
+        caseSeries = caseSeries.permute(1, 0, 2)
         h = F.leaky_relu(self.fc0_1(cityData), 0.1)
         h = F.leaky_relu(self.fc0_2(h), 0.1).view(cityData.size()[0], self.gru.num_layers, self.gru.hidden_size).permute(1, 0, 2)
         output, h = self.gru(caseSeries, h)

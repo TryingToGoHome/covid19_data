@@ -111,25 +111,27 @@ def new_confirmed(mode, County, Province, Country, time):
     increase = []
 
     if mode == "Country":
-        increase.append(int(df[date_list[0]][Country]))
         for i, date in enumerate(date_list):
-            cumulative.append(float(df[date][Country]))
-            if i > 0:
-                increase.append(cumulative[i] - cumulative[i-1])
+            cumulative.append(int(df[date][Country]))
     elif mode == "Region":
-        increase.append(int(df[date_list[0]][Country]))
         for i, date in enumerate(date_list):
-            cumulative.append(float(df[date][Country]))
-            if i > 0:
-                increase.append(cumulative[i] - cumulative[i-1])
-    # start_num, day1 increase, ..., day 14 increase
-    #
-    # print(torch.FloatTensor(increase))
+            cumulative.append(int(df[date][Country]))
+
+    assert len(cumulative) == 14, "country {} date {} is not right: cumulative {}".format(Country, time, cumulative)
     return cumulative
+
+def overlap(start_time, end_time):
+    day, month, year = start_time.split('/')
+    day_end, month_end, year_end = end_time.split('/')
+
+    if month > month_end or (month == month_end and day >= day_end):
+        return [0 for i in range(14)]
+
 
 
 
 def city_info(mode, Province, Country):
+
 
     if mode == 'Region':
         df = pd.read_csv(REGION_DATE, index_col='ID')
@@ -198,8 +200,12 @@ if __name__ == "__main__":
     # Build Class
     time_array = time.split(",")
     city_info("Country","", "Japan")
-    new_confirmed("Country","", "Alabama", "Japan", '03/22/20')
 
+    entire_country = pd.read_csv(REGION_DATE)['ID'].values.tolist()
+
+    for i in entire_country:
+        for time in time.split(',')[DAY_OF_OBSERVATION:]:
+            new_confirmed("ID","", "", i, time)
 
     train = Covid19Dataset("train")
     evaluator = None
