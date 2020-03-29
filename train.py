@@ -50,7 +50,7 @@ def val_fn(model, val_loader, device, criterion, epoch):
         print('Epoch %d val loss: %.3f' % (epoch + 1, loss))
     sys.stdout.flush()
 
-def train_model(batch_size=32, lr=0.001, regularizer=2E-4):
+def train_model(batch_size=32, lr=0.0005, regularizer=2E-4):
     train_epochs = 300
 
     train_set = Covid19Dataset(splits='train')
@@ -59,7 +59,7 @@ def train_model(batch_size=32, lr=0.001, regularizer=2E-4):
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=128)
 
-    criterion = nn.MSELoss()
+    criterion = nn.L1Loss()
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=regularizer)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -67,6 +67,8 @@ def train_model(batch_size=32, lr=0.001, regularizer=2E-4):
     for i in range(train_epochs):
         train_fn(model, train_loader, device, optimizer, criterion, i)
         val_fn(model, val_loader, device, criterion, i)
+
+    return model
 
 def evaluate(model, device, city_info, sequence, num_pred = 1):
     model.eval()
