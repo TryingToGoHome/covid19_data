@@ -6,6 +6,12 @@ from torch.utils.data.dataloader import DataLoader
 from covid19_data import Covid19Dataset
 from model import CovidPred
 
+class SomeLoss:
+    def __init__(self):
+        pass
+    def __call__(self, output, label):
+        return torch.mean(torch.abs((output - label)).log1p())
+
 def train_fn(model, train_loader, device, optimizer, criterion, epoch):
     # train
     running_loss = 0.0
@@ -50,7 +56,7 @@ def val_fn(model, val_loader, device, criterion, epoch):
         print('Epoch %d val loss: %.3f' % (epoch + 1, loss))
     sys.stdout.flush()
 
-def train_model(batch_size=32, lr=0.0005, regularizer=2E-4):
+def train_model(batch_size=16, lr=0.0005, regularizer=2E-4):
     train_epochs = 300
 
     train_set = Covid19Dataset(splits='train')
@@ -59,7 +65,7 @@ def train_model(batch_size=32, lr=0.0005, regularizer=2E-4):
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=128)
 
-    criterion = nn.L1Loss()
+    criterion = SomeLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=regularizer)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -82,4 +88,4 @@ def evaluate(model, device, city_info, sequence, num_pred = 1):
 
 
 if __name__ == '__main__':
-    train_model()
+    train_model(batch_size=32)

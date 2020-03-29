@@ -18,5 +18,5 @@ class CovidPred(nn.Module):
         h = F.leaky_relu(self.fc0_1(cityData), 0.1)
         h = F.leaky_relu(self.fc0_2(h), 0.1).contiguous().view(cityData.size()[0], self.gru.num_layers, self.gru.hidden_size).permute(1, 0, 2)
         output, h = self.gru(caseSeries, h)
-        h = h[-1]
+        h = F.relu(h[-1])
         return self.fc_1(torch.cat([h], dim=1)).exp() - 1
