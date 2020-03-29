@@ -168,7 +168,7 @@ class Covid19Dataset(Dataset):
 
         id_output_path = os.path.join(ROOT+'trimmed_data/'+splits+'/', "id_to_output.json")
         input_id_path = os.path.join(ROOT+'trimmed_data/'+splits+'/', "input_to_id.json")
-        id_target_path = os.path.join(ROOT+'trimmed_data/'+splits+'/', "target.json")
+        id_target_path = os.path.join(ROOT+'trimmed_data/'+splits+'/', "id_to_target.json")
 
         self.id_to_output = json.load(open(id_output_path))
         self.input_to_id = json.load(open(input_id_path))
@@ -184,7 +184,7 @@ class Covid19Dataset(Dataset):
 
         # Get image info
         city, covid = self.id_to_output[str(item)]
-        target = self.target[str(item)]
+        target = int(self.target[str(item)])
 
         return torch.FloatTensor(city), torch.FloatTensor(covid), torch.FloatTensor(target)
 

@@ -54,13 +54,13 @@ if __name__ == "__main__":
                 if cumulative_array[-1] != 0 and goal > 0:
                     _id = len(input_to_id)
                     input_to_id[loc_date] = _id
-                    id_to_target[_id] = goal
+                    id_to_target[_id] = str(goal)
                     id_to_output[_id] = (city, cumulative_array)
                     country_all_zero = True
                 if j == len(date_list) - 1 and country_all_zero is True:
                     _id = len(input_to_id)
                     input_to_id[loc_date] = _id
-                    id_to_target[_id] = 0
+                    id_to_target[_id] = "0"
                     id_to_output[_id] = (city, [0 for i in range(15)])
 
 
@@ -76,17 +76,18 @@ if __name__ == "__main__":
                 if cumulative_array[-1] != 0 and goal > 0:
                     _id = len(input_to_id)
                     input_to_id[loc_date] = _id
-                    id_to_target[_id] = goal
+                    id_to_target[_id] = str(goal)
                     id_to_output[_id] = (city, cumulative_array)
                     city_all_zero = True
 
                 if j == len(date_list) - 1 and city_all_zero is True:
                     _id = len(input_to_id)
                     input_to_id[loc_date] = _id
-                    id_to_target[_id] = 0
+                    id_to_target[_id] = "0"
                     id_to_output[_id] = (city, [0 for i in range(15)])
 
 
         outfile = os.path.join(ROOT+'trimmed_data/', (name[index]))
         json.dump(input_to_id, open(os.path.join(outfile, "input_to_id.json"), "w"))
         json.dump(id_to_output, open(os.path.join(outfile, "id_to_output.json"), "w"))
+        json.dump(id_to_target, open(os.path.join(outfile, "id_to_target.json"), "w"))
