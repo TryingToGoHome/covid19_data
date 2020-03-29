@@ -16,12 +16,13 @@ from covid19_data import new_confirmed, city_info, time
 ROOT = '/local/shanxiu/ubert/covid/'
 ARCHIVED_COVID_DATA = os.path.join(ROOT, 'archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv')
 COUNTRY_DATA = os.path.join(ROOT, 'country_covid.csv')
+REGION_DATA = os.path.join(ROOT, 'region_covid.csv')
 DAY_OF_OBSERVATION = 15
 
 
 if __name__ == "__main__":
 
-    entire_country = pd.read_csv(COUNTRY_DATA)['Country'].values.tolist()
+    entire_country = pd.read_csv(REGION_DATA)['Country'].values.tolist()
 
     train_set, test_set = train_test_split(entire_country, test_size=0.1, random_state=42)
     train_set, dev_set = train_test_split(train_set, test_size=0.1, random_state=42)

@@ -1,5 +1,4 @@
 # coding=utf-8
-# Copyleft 2019 project LXRT.
 
 import json
 import os
@@ -28,6 +27,7 @@ from sklearn.model_selection import train_test_split
 ROOT = '/local/shanxiu/ubert/covid/'
 ARCHIVED_COVID_DATA = os.path.join(ROOT, 'archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv')
 COUNTRY_DATA = os.path.join(ROOT, 'country_covid.csv')
+REGION_DATE = os.path.join(ROOT, 'region_covid.csv')
 
 
 SPLIT2NAME = {
