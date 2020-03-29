@@ -13,6 +13,7 @@ import pandas as pd
 import torch
 import csv
 from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 # from param import args
 # from src.utils import load_obj_h5py
@@ -105,7 +106,7 @@ def new_confirmed(County, Province, Country, time):
     # start_num, day1 increase, ..., day 14 increase
     #
     # print(torch.FloatTensor(increase))
-    return torch.FloatTensor(increase)
+    return increase
 
 
 
@@ -127,8 +128,7 @@ def city_info(Province, Country):
     info.append(literacy)
 
     # print(torch.FloatTensor(info))
-    return torch.FloatTensor(info)
-
+    return info
 
 
 class Covid19Dataset(Dataset):
@@ -137,46 +137,46 @@ class Covid19Dataset(Dataset):
 
         self.splits = splits
 
-        entire_country = pd.read_csv(COUNTRY_DATA)['Country'].values.tolist()
-
-        train_set, test_set = train_test_split(entire_country, test_size = 0.1, random_state = 42)
-        train_set, dev_set = train_test_split(train_set, test_size=0.1, random_state=42)
-
+        # entire_country = pd.read_csv(COUNTRY_DATA)['Country'].values.tolist()
+        #
+        # train_set, test_set = train_test_split(entire_country, test_size = 0.1, random_state = 42)
+        # train_set, dev_set = train_test_split(train_set, test_size=0.1, random_state=42)
+        #
         if splits == "train":
-            self.location = train_set
+            self.id_to_output = json.load(open(os.path.join(ROOT+"train/", "id_to_output.json")))
         if splits == "dev":
-            self.location = dev_set
+            self.id_to_output = json.load(open(os.path.join(ROOT+"dev/", "id_to_output.json")))
         if splits == "test":
-            self.location = test_set
+            self.id_to_output = json.load(open(os.path.join(ROOT+"test/", "id_to_output.json")))
 
-        self.date = time.split(",")[DAY_OF_OBSERVATION:]
+        # self.date = time.split(",")[DAY_OF_OBSERVATION:]
+        #
+        # # {"location, date", id}
+        # # {id: (location, population, policy), (day1, day2, ..., day14)}
+        # self.input_to_id = {}
+        # self.id_to_output = {}
+        #
+        # for i, curr_location in enumerate(self.location):
+        #     for j, date in enumerate(self.date):
+        #         self.input_to_id[(curr_location, date)] = len(self.input_to_id)
+        #         _id = self.input_to_id[(curr_location, date)]
+        #
+        #         city = city_info("", curr_location)
+        #         cumulative_array = new_confirmed("", "", curr_location, date)
+        #         self.id_to_output[_id] = (city, cumulative_array)
 
-        # {"location, date", id}
-        # {id: (location, population, policy), (day1, day2, ..., day14)}
-        self.input_to_id = {}
-        self.id_to_output = {}
 
-        for i, curr_location in enumerate(self.location):
-            for j, date in enumerate(self.date):
-                self.input_to_id[(curr_location, date)] = len(self.input_to_id)
-                _id = self.input_to_id[(curr_location, date)]
-
-                city = city_info("", curr_location)
-                cumulative_array = new_confirmed("", "", curr_location, date)
-                self.id_to_output[_id] = (city, cumulative_array)
-
-
-        print("Use %d data in dataset" % (len(self.input_to_id)))
+        print("Use %d data in dataset" % (len(self.id_to_output)))
         print()
 
     def __len__(self):
-        return len(self.location) * (len(self.date) - DAY_OF_OBSERVATION)
+        return len(self.id_to_output)
 
     def __getitem__(self, item: int):
 
         # Get image info
-        return self.id_to_output[item]
-
+        city, covid = self.id_to_output[str(item+1)]
+        return torch.FloatTensor(city), torch.FloatTensor(covid)
 
 # train.json, dev.json, test.json {city : id}
 if __name__ == "__main__":
@@ -185,15 +185,16 @@ if __name__ == "__main__":
     city_info("", "Japan")
     new_confirmed("", "Alabama", "Japan", '03/22/20')
 
+
     train = Covid19Dataset("train")
     evaluator = None
-    data_loader = DataLoader(train, drop_last=drop_last)
+    data_loader = DataLoader(train)
 
-    for i, value in tqdm(enumerate(data_loader)):
-        city, covid_info = value[:2]
+    for i, value in enumerate(data_loader):
+        city, covid_info = value
         with torch.no_grad():
             print("city")
             print(city)
             print("covid_info")
-            print(covid)
+            print(covid_info)
 
