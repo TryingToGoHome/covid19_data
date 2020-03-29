@@ -23,27 +23,40 @@ DAY_OF_OBSERVATION = 15
 if __name__ == "__main__":
 
     entire_country = pd.read_csv(COUNTRY_DATA)['Country'].values.tolist()
+    entire_region = pd.read_csv(REGION_DATA)['ID'].values.tolist()
 
-    train_set, test_set = train_test_split(entire_country, test_size=0.1, random_state=42)
-    train_set, dev_set = train_test_split(train_set, test_size=0.1, random_state=42)
+    country_train, country_test, region_train, region_test = train_test_split(entire_country, entire_region, test_size=0.1, random_state=42)
+    country_train, country_dev, region_train, region_dev = train_test_split(country_train, region_train, test_size=0.1, random_state=42)
 
-    list = [train_set, dev_set, test_set]
+    list = [country_train, country_dev, country_test, region_train, region_dev, region_test]
     name = ["train", "dev", "test"]
 
     date_list = time.split(",")[DAY_OF_OBSERVATION:]
     input_to_id = {}
     id_to_output = {}
 
-    for index, split in enumerate(list):
-        for i, curr_location in enumerate(split):
+    for index, split in enumerate(name):
+        country_data = list[index]
+        county_data = list[index+3]
+        for i, curr_location in enumerate(country_data):
             for j, date in enumerate(date_list):
                 loc_date = curr_location + '!' + date
-                input_to_id[loc_date] = len(input_to_id)
+                _id = len(input_to_id)
+                input_to_id[loc_date] = _id
 
+                city = city_info("Country","", curr_location)
+                cumulative_array = new_confirmed("Country", "", "", curr_location, date)
+                id_to_output[_id] = (city, cumulative_array)
 
-                city = city_info("", curr_location)
-                cumulative_array = new_confirmed("", "", curr_location, date)
-                id_to_output[len(input_to_id)] = (city, cumulative_array)
+        for i, curr_location in enumerate(county_data):
+            for j, date in enumerate(date_list):
+                loc_date = curr_location + '!' + date
+                _id = len(input_to_id)
+                input_to_id[loc_date] = _id
+
+                city = city_info("Region","", curr_location)
+                cumulative_array = new_confirmed("Region", "", "", curr_location)
+                id_to_output[_id] = (city, cumulative_array)
 
         outfile = os.path.join(ROOT, (name[index]))
         json.dump(input_to_id, open(os.path.join(outfile, "input_to_id.json"), "w"))

@@ -29,7 +29,7 @@ ROOT = './'
 ARCHIVED_COVID_DATA = os.path.join(ROOT, 'archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv')
 COUNTRY_DATA = os.path.join(ROOT, 'country_covid.csv')
 REGION_DATE = os.path.join(ROOT, 'region_covid.csv')
-MODE = 'REGION'
+
 
 SPLIT2NAME = {
     'train': 'train.json',
@@ -56,7 +56,7 @@ covid19_country_column = Country,Region,Population,Area (sq. mi.),Population Den
 DAY_OF_OBSERVATION = 14
 
 #county, province, country, 1/22/20
-def new_confirmed(County, Province, Country, time):
+def new_confirmed(mode, County, Province, Country, time):
     #return an array of previous days
     date_list = []
     date = time.split('/') #month/day/year
@@ -92,19 +92,26 @@ def new_confirmed(County, Province, Country, time):
     date_list.reverse()
 
 
-    if MODE == "COUNTRY":
+    if mode == "Country":
         df = pd.read_csv(COUNTRY_DATA, index_col='Country')
-    elif MODE == "REGION":
+    elif mode == "Region":
         df = pd.read_csv(REGION_DATE, index_col='ID')
 
     cumulative = []
     increase = []
 
-    increase.append(int(df[date_list[0]][Country]))
-    for i, date in enumerate(date_list):
-        cumulative.append(float(df[date][Country]))
-        if i > 0:
-            increase.append(cumulative[i] - cumulative[i-1])
+    if mode == "Country":
+        increase.append(int(df[date_list[0]][Country]))
+        for i, date in enumerate(date_list):
+            cumulative.append(float(df[date][Country]))
+            if i > 0:
+                increase.append(cumulative[i] - cumulative[i-1])
+    elif mode == "Region":
+        increase.append(int(df[date_list[0]][Country]))
+        for i, date in enumerate(date_list):
+            cumulative.append(float(df[date][Country]))
+            if i > 0:
+                increase.append(cumulative[i] - cumulative[i-1])
 
     # start_num, day1 increase, ..., day 14 increase
     #
@@ -113,13 +120,13 @@ def new_confirmed(County, Province, Country, time):
 
 
 
-def city_info(Province, Country):
+def city_info(mode, Province, Country):
 
-    if MODE == 'REGION':
+    if mode == 'Region':
         df = pd.read_csv(REGION_DATE, index_col='ID')
         info = [0 for i in range(5)]
 
-    if MODE == 'COUNTRY':
+    if mode == 'Country':
         df = pd.read_csv(COUNTRY_DATA, index_col='Country')
         info = []
         population = math.log(float(df["Population"][Country]), 10)
@@ -182,7 +189,7 @@ class Covid19Dataset(Dataset):
     def __getitem__(self, item: int):
 
         # Get image info
-        city, covid = self.id_to_output[str(item+1)]
+        city, covid = self.id_to_output[str(item)]
 
         return torch.FloatTensor(city), torch.FloatTensor(covid) if city is not None else None, torch.FloatTensor(covid)
 
@@ -195,8 +202,8 @@ class Covid19Dataset(Dataset):
 if __name__ == "__main__":
     # Build Class
     time_array = time.split(",")
-    city_info("", "Japan")
-    new_confirmed("", "Alabama", "Japan", '03/22/20')
+    city_info("Country","", "Japan")
+    new_confirmed("Country","", "Alabama", "Japan", '03/22/20')
 
 
     train = Covid19Dataset("train")
