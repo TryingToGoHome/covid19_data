@@ -186,7 +186,7 @@ class Covid19Dataset(Dataset):
         city, covid = self.id_to_output[str(item)]
         target = int(self.target[str(item)])
 
-        return torch.FloatTensor(city), torch.FloatTensor(covid), torch.FloatTensor(target)
+        return torch.FloatTensor(city), torch.FloatTensor(covid), target
 
     def city_features(self):
         return 5
@@ -206,10 +206,13 @@ if __name__ == "__main__":
     data_loader = DataLoader(train)
 
     for i, value in enumerate(data_loader):
-        city, covid_info = value
+        city, covid_info, target = value
         with torch.no_grad():
             print("city")
             print(city)
             print("covid_info")
+
             print(covid_info)
+            print("target")
+            print(target)
 
