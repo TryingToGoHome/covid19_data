@@ -4,13 +4,16 @@
 import json
 import os
 import pickle
+import math
+import tqdm
+
 
 import numpy as np
-# import pandas as pd
+import pandas as pd
 import torch
 import csv
 from torch.utils.data import Dataset
-
+from sklearn.model_selection import train_test_split
 # from param import args
 # from src.utils import load_obj_h5py
 
@@ -20,33 +23,39 @@ from torch.utils.data import Dataset
 
 # The path to data and image features.
 
-ARCHIVED_COVID_DATA = '/Users/nanyamashuu/PycharmProjects/COVID-19/archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv'
+
+ROOT = '/local/shanxiu/ubert/covid/'
+ARCHIVED_COVID_DATA = os.path.join(ROOT, 'archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv')
+COUNTRY_DATA = os.path.join(ROOT, 'country_covid.csv')
+
 
 SPLIT2NAME = {
-    'train': 'train',
-    'dev': 'dev',
-    'test': 'test',
+    'train': 'train.json',
+    'dev': 'dev.json',
+    'test': 'test.json',
 }
 
+time = "1/22/20,1/23/20,1/24/20,1/25/20,1/26/20,1/27/20,1/28/20,1/29/20,1/30/20,1/31/20,2/1/20,2/2/20,2/3/20,2/4/20,2/5/20,2/6/20,2/7/20,2/8/20,2/9/20,2/10/20,2/11/20,2/12/20,2/13/20,2/14/20,2/15/20,2/16/20,2/17/20,2/18/20,2/19/20,2/20/20,2/21/20,2/22/20,2/23/20,2/24/20,2/25/20,2/26/20,2/27/20,2/28/20,2/29/20,3/1/20,3/2/20,3/3/20,3/4/20,3/5/20,3/6/20,3/7/20,3/8/20,3/9/20,3/10/20,3/11/20,3/12/20,3/13/20,3/14/20,3/15/20,3/16/20,3/17/20,3/18/20,3/19/20,3/20/20,3/21/20,3/22/20,3/23/20"
+
+
 """
-An example in obj36 tsv:
-csv_column = [Province/State,Country/Region,Lat,Long,1/22/20,1/23/20,1/24/20,1/25/20,1/26/20,
+time_series_column = [Province/State,Country/Region,Lat,Long,1/22/20,1/23/20,1/24/20,1/25/20,1/26/20,
 1/27/20,1/28/20,1/29/20,1/30/20,1/31/20,2/1/20,2/2/20,2/3/20,2/4/20,2/5/20,2/6/20,2/7/20,2/8/20,
 2/9/20,2/10/20,2/11/20,2/12/20,2/13/20,2/14/20,2/15/20,2/16/20,2/17/20,2/18/20,2/19/20,2/20/20,
 2/21/20,2/22/20,2/23/20,2/24/20,2/25/20,2/26/20,2/27/20,2/28/20,2/29/20,3/1/20,3/2/20,3/3/20,
 3/4/20,3/5/20,3/6/20,3/7/20,3/8/20,3/9/20,3/10/20,3/11/20,3/12/20,3/13/20,3/14/20,3/15/20,3/16/20,
 3/17/20,3/18/20,3/19/20,3/20/20,3/21/20,3/22/20,3/23/20]
 
+covid19_country_column = Country,Region,Population,Area (sq. mi.),Population Density,GDP ($per capita),Literacy (%),1/22/20,
 
-FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
-              "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
-FIELDNAMES would be keys in the dict returned by load_obj_tsv.
+
 """
 
+DAY_OF_OBSERVATION = 15
 
 #county, province, country, 1/22/20
 def new_confirmed(County, Province, Country, time):
-    #return an array of previous 14 days
+    #return an array of previous days
     date_list = []
     date = time.split('/') #month/day/year
     month = int(date[0])
@@ -56,16 +65,16 @@ def new_confirmed(County, Province, Country, time):
 
     #assume date is valid, edit later
 
-    if (day-14 > 0):
-        for i in range(1,15,1):
+    if (day- DAY_OF_OBSERVATION > 0):
+        for i in range(1, DAY_OF_OBSERVATION+1, 1):
             curr_day = str(day - i)
-            date_string = str(month)+'/' +curr_day + '/' + str(year)
+            date_string = str(month)+'/' + curr_day + '/' + str(year)
             date_list.append(date_string)
     else:
-        left = 14 - day + 1
+        left = DAY_OF_OBSERVATION - day + 1
         for i in range(1, day, 1):
             curr_day = str(day - i)
-            date_string = str(month)+'/' +curr_day + '/' + str(year)
+            date_string = str(month)+'/' + curr_day + '/' + str(year)
             date_list.append(date_string)
         if month == 3:
             for i in range(0, left, 1):
@@ -78,23 +87,47 @@ def new_confirmed(County, Province, Country, time):
                 date_string = str(month-1) + '/' + curr_day + '/' + str(year)
                 date_list.append(date_string)
 
+    date_list.reverse()
 
 
 
+    df = pd.read_csv(COUNTRY_DATA, index_col='Country')
+
+    cumulative = []
+    increase = []
+
+    increase.append(int(df[date_list[0]][Country]))
+    for i, date in enumerate(date_list):
+        cumulative.append(float(df[date][Country]))
+        if i > 0:
+            increase.append(cumulative[i] - cumulative[i-1])
+
+    # start_num, day1 increase, ..., day 14 increase
+    #
+    # print(torch.FloatTensor(increase))
+    return torch.FloatTensor(increase)
 
 
 
-    with open(ARCHIVED_COVID_DATA, mode='r') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        line_count = 0
-        for row in csv_reader:
-            if line_count == 0:
-                print(f'Column names are {", ".join(row)}')
-                line_count += 1
-            print(
-                f'\t{row["name"]} works in the {row["department"]} department, and was born in {row["birthday month"]}.')
-            line_count += 1
-    #     print(f'Processed {line_count} lines.')
+def city_info(Province, Country):
+
+    df = pd.read_csv(COUNTRY_DATA, index_col='Country')
+
+    info = []
+    population = math.log(float(df["Population"][Country]), 10)
+    area = math.log(float(df["Area (sq. mi.)"][Country]), 10)
+    density = math.log(float(df["Population Density"][Country]), 10)
+    gdp = math.log(float(df["GDP ($per capita)"][Country]), 10)
+    literacy = math.log(float(df["Literacy (%)"][Country]), 10)
+
+    info.append(population)
+    info.append(area)
+    info.append(density)
+    info.append(gdp)
+    info.append(literacy)
+
+    # print(torch.FloatTensor(info))
+    return torch.FloatTensor(info)
 
 
 
@@ -104,49 +137,63 @@ class Covid19Dataset(Dataset):
 
         self.splits = splits
 
-        # Loading detection features to img_data
-        self.img_data = []
-        # for split in self.splits:
-            # Minival is 5K images in MS COCO, which is used in evaluating VQA/LXMERT-pre-training.
-            # It is saved as the top 5K features in val2014_***.tsv
-        load_topk = SPLIT2NUM[splits]
-        # self.img_data.extend(load_obj_tsv(
-        #     os.path.join(VISUALSRL_IMGFEAT_ROOT, '%s_obj36.tsv' % (SPLIT2NAME[self.splits])), topk=load_topk))
+        entire_country = pd.read_csv(COUNTRY_DATA)['Country'].values.tolist()
 
-        self.img_data.extend(load_obj_h5py(
-            os.path.join(VISUALSRL_IMGFEAT_ROOT, '%s_obj36.tsv' % (SPLIT2NAME[self.splits])), topk=load_topk))
+        train_set, test_set = train_test_split(entire_country, test_size = 0.1, random_state = 42)
+        train_set, dev_set = train_test_split(train_set, test_size=0.1, random_state=42)
 
-        # Convert img list to dict
-        self.imgid2img = {}
-        for img_datum in self.img_data:
-            self.imgid2img[img_datum['img_id']] = img_datum
+        if splits == "train":
+            self.location = train_set
+        if splits == "dev":
+            self.location = dev_set
+        if splits == "test":
+            self.location = test_set
+
+        self.date = time.split(",")[DAY_OF_OBSERVATION:]
+
+        # {"location, date", id}
+        # {id: (location, population, policy), (day1, day2, ..., day14)}
+        self.input_to_id = {}
+        self.id_to_output = {}
+
+        for i, curr_location in enumerate(self.location):
+            for j, date in enumerate(self.date):
+                self.input_to_id[(curr_location, date)] = len(self.input_to_id)
+                _id = self.input_to_id[(curr_location, date)]
+
+                city = city_info("", curr_location)
+                cumulative_array = new_confirmed("", "", curr_location, date)
+                self.id_to_output[_id] = (city, cumulative_array)
 
 
-        print("Use %d data in torch dataset" % (len(self.img_data)))
+        print("Use %d data in dataset" % (len(self.input_to_id)))
         print()
 
     def __len__(self):
-        return len(self.img_data)
+        return len(self.location) * (len(self.date) - DAY_OF_OBSERVATION)
 
     def __getitem__(self, item: int):
 
         # Get image info
-        img_info = self.img_data[item]
-        img_name = img_info['img_id']
-        obj_num = img_info['num_boxes']
-        feats = img_info['features'].copy()
-        boxes = img_info['boxes'].copy()
-        assert obj_num == len(boxes) == len(feats)
-
-        # Normalize the boxes (to 0 ~ 1)
-        img_h, img_w = img_info['img_h'], img_info['img_w']
-        boxes = boxes.copy()
-        boxes[:, (0, 2)] /= img_w
-        boxes[:, (1, 3)] /= img_h
-        np.testing.assert_array_less(boxes, 1+1e-5)
-        np.testing.assert_array_less(-boxes, 0+1e-5)
-
-        return img_name, feats, boxes
+        return self.id_to_output[item]
 
 
-new_confirmed("", "", "", '03/10/20')
+# train.json, dev.json, test.json {city : id}
+if __name__ == "__main__":
+    # Build Class
+    time_array = time.split(",")
+    city_info("", "Japan")
+    new_confirmed("", "Alabama", "Japan", '03/22/20')
+
+    train = Covid19Dataset("train")
+    evaluator = None
+    data_loader = DataLoader(train, drop_last=drop_last)
+
+    for i, value in tqdm(enumerate(data_loader)):
+        city, covid_info = value[:2]
+        with torch.no_grad():
+            print("city")
+            print(city)
+            print("covid_info")
+            print(covid)
+
