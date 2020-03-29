@@ -14,14 +14,14 @@ def train_fn(model, train_loader, device, optimizer, criterion, epoch):
     for data in train_loader:
         # get the inputs
         cityData, caseSeries, labels = data
-        cityData, caseSeries, labels = cityData.to(device), caseSeries.to(device), labels.to(device)
+        cityData, caseSeries, labels = cityData.to(device).float(), caseSeries.to(device).float(), labels.to(device).float()
         caseSeries = caseSeries.contiguous().view(*caseSeries.size(), 1)
 
         if labels.size()[0] == 1:
             continue
         # zero the parameter gradients
         optimizer.zero_grad()
-        outputs = model(cityData, caseSeries)
+        outputs = model(cityData, caseSeries).view(-1)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -38,14 +38,14 @@ def val_fn(model, val_loader, device, criterion, epoch):
         outputs = []
         labels = []
         for data in val_loader:
-            cityData, caseSeries, labels = data
-            cityData, caseSeries = cityData.to(device), caseSeries.to(device), labels.to(device)
+            cityData, caseSeries, label = data
+            cityData, caseSeries, label = cityData.to(device).float(), caseSeries.to(device).float(), label.to(device).float()
             caseSeries = caseSeries.contiguous().view(*caseSeries.size(), 1)
             output = model(cityData, caseSeries)
             outputs.append(output)
             labels.append(label)
         outputs = torch.cat(outputs)
-        labels = torch.cat(labels)
+        labels = torch.cat(labels).view(-1)
         loss = criterion(outputs, labels)
         print('Epoch %d val loss: %.3f' % (epoch + 1, loss))
     sys.stdout.flush()
