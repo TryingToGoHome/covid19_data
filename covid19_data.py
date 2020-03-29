@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 # The path to data and image features.
 
 
-ROOT = '/local/shanxiu/ubert/covid/'
+ROOT = './'
 ARCHIVED_COVID_DATA = os.path.join(ROOT, 'archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv')
 COUNTRY_DATA = os.path.join(ROOT, 'country_covid.csv')
 REGION_DATE = os.path.join(ROOT, 'region_covid.csv')
@@ -119,7 +119,7 @@ def city_info(Province, Country):
     area = math.log(float(df["Area (sq. mi.)"][Country]), 10)
     density = math.log(float(df["Population Density"][Country]), 10)
     gdp = math.log(float(df["GDP ($per capita)"][Country]), 10)
-    literacy = math.log(float(df["Literacy (%)"][Country]), 10)
+    literacy = float(df["Literacy (%)"][Country]) / 1000
 
     info.append(population)
     info.append(area)
@@ -177,6 +177,11 @@ class Covid19Dataset(Dataset):
         # Get image info
         city, covid = self.id_to_output[str(item+1)]
         return torch.FloatTensor(city), torch.FloatTensor(covid)
+
+    def city_features(self):
+        return 5
+    def sequence_features(self):
+        return 1
 
 # train.json, dev.json, test.json {city : id}
 if __name__ == "__main__":
