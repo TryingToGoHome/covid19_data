@@ -14,6 +14,7 @@ import csv
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
+
 # from param import args
 # from src.utils import load_obj_h5py
 
@@ -28,7 +29,7 @@ ROOT = './'
 ARCHIVED_COVID_DATA = os.path.join(ROOT, 'archived_data/archived_time_series/time_series_19-covid-Confirmed_archived_0325.csv')
 COUNTRY_DATA = os.path.join(ROOT, 'country_covid.csv')
 REGION_DATE = os.path.join(ROOT, 'region_covid.csv')
-
+MODE = 'REGION'
 
 SPLIT2NAME = {
     'train': 'train.json',
@@ -52,7 +53,7 @@ covid19_country_column = Country,Region,Population,Area (sq. mi.),Population Den
 
 """
 
-DAY_OF_OBSERVATION = 15
+DAY_OF_OBSERVATION = 14
 
 #county, province, country, 1/22/20
 def new_confirmed(County, Province, Country, time):
@@ -91,8 +92,10 @@ def new_confirmed(County, Province, Country, time):
     date_list.reverse()
 
 
-
-    df = pd.read_csv(COUNTRY_DATA, index_col='Country')
+    if MODE == "COUNTRY":
+        df = pd.read_csv(COUNTRY_DATA, index_col='Country')
+    elif MODE == "REGION":
+        df = pd.read_csv(REGION_DATE, index_col='ID')
 
     cumulative = []
     increase = []
@@ -106,26 +109,30 @@ def new_confirmed(County, Province, Country, time):
     # start_num, day1 increase, ..., day 14 increase
     #
     # print(torch.FloatTensor(increase))
-    return increase
+    return cumulative
 
 
 
 def city_info(Province, Country):
 
-    df = pd.read_csv(COUNTRY_DATA, index_col='Country')
+    if MODE == 'REGION':
+        df = pd.read_csv(REGION_DATE, index_col='ID')
+        info = [0 for i in range(5)]
 
-    info = []
-    population = math.log(float(df["Population"][Country]), 10)
-    area = math.log(float(df["Area (sq. mi.)"][Country]), 10)
-    density = math.log(float(df["Population Density"][Country]), 10)
-    gdp = math.log(float(df["GDP ($per capita)"][Country]), 10)
-    literacy = float(df["Literacy (%)"][Country]) / 1000
+    if MODE == 'COUNTRY':
+        df = pd.read_csv(COUNTRY_DATA, index_col='Country')
+        info = []
+        population = math.log(float(df["Population"][Country]), 10)
+        area = math.log(float(df["Area (sq. mi.)"][Country]), 10)
+        density = math.log(float(df["Population Density"][Country]), 10)
+        gdp = math.log(float(df["GDP ($per capita)"][Country]), 10)
+        literacy = float(df["Literacy (%)"][Country]) / 1000
 
-    info.append(population)
-    info.append(area)
-    info.append(density)
-    info.append(gdp)
-    info.append(literacy)
+        info.append(population)
+        info.append(area)
+        info.append(density)
+        info.append(gdp)
+        info.append(literacy)
 
     # print(torch.FloatTensor(info))
     return info
@@ -176,7 +183,8 @@ class Covid19Dataset(Dataset):
 
         # Get image info
         city, covid = self.id_to_output[str(item+1)]
-        return torch.FloatTensor(city), torch.FloatTensor(covid)
+
+        return torch.FloatTensor(city), torch.FloatTensor(covid) if city is not None else None, torch.FloatTensor(covid)
 
     def city_features(self):
         return 5
